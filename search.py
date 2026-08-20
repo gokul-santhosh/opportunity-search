@@ -27,24 +27,65 @@ from openai import OpenAI
 # ============================================================
 
 QUERIES = [
+    # scholarships and grants
     "sports scholarship India last date apply",
     "sports scholarship Tamil Nadu last date",
-    "sports quota recruitment notification last date",
-    "sports quota admission trials last date",
-    "sports hostel admission India selection trials",
+    "sports scholarship opportunities students apply",
+    "athlete scholarship India applications open",
+    "sports grant athletes India apply",
+    "sports sponsorship athletes India apply",
     "athlete financial assistance scheme India apply",
-    "Khelo India scholarship notification apply",
-    "Sports Authority of India scholarship last date",
-    "SDAT Tamil Nadu scheme sportspersons apply",
-    "railway sports quota recruitment notification",
-    "bank sports quota recruitment sportspersons",
-    "GoSports Foundation athlete support apply",
-    "Reliance Foundation scholarship last date",
-    "Tata Trusts sports grant athlete",
-    "badminton scholarship India apply",
-    "kabaddi sports quota recruitment India",
-    "athletics scholarship India apply last date",
-    "para athlete support scheme India",
+    "sports stipend monthly athletes India",
+    "cash award medal winners sportspersons scheme",
+    "sports equipment kit support athletes India",
+    "tournament travel expenses athletes India support",
+
+    # college and admission
+    "sports quota admission last date",
+    "sports quota admission trials notification",
+    "sports quota seat college India apply",
+    "sports quota fee concession college",
+    "sports quota fee waiver university India",
+    "sports quota engineering admission Tamil Nadu",
+    "sports quota MBBS admission India",
+    "college sports trials selection notification India",
+
+    # jobs
+    "sports quota recruitment notification last date",
+    "sports quota job vacancy India apply online",
+    "sportspersons recruitment government India notification",
+    "sports quota bank recruitment last date",
+    "sports quota railway recruitment notification",
+    "sports quota police army recruitment India",
+    "sports quota PSU vacancy sportspersons",
+
+    # training and residential
+    "sports hostel admission India selection trials",
+    "free sports academy admission India trials",
+    "residential sports school admission India",
+    "sports coaching centre free admission India",
+
+    # the words the documents themselves use
+    "meritorious sportspersons scheme India apply",
+    "eminent sportspersons recruitment notification",
+    "gradation certificate sportspersons application",
+    "sports quota reservation government jobs India",
+
+    # who else funds this
+    "CSR sports programme athletes India apply",
+    "sports trust foundation scholarship India apply",
+    "corporate sports sponsorship young athletes India",
+    "state sports council scheme athletes apply",
+
+    # para and school
+    "para athlete support scheme India apply",
+    "para sports scholarship India applications",
+    "school sports scholarship India apply",
+    "junior athlete support programme India",
+
+    # when things reopen
+    "sports scholarship India applications open next",
+    "sports quota recruitment upcoming notification India",
 ]
 
 
@@ -57,7 +98,7 @@ ASK = """Search the web for: {query}
 This is for student athletes in India, especially Tamil Nadu, from
 low-income families.
 
-Return everything relevant you find, up to 10 results. Include expired
+Return everything relevant you find, up to 25 results. Include expired
 listings — an old notification tells us when the scheme reopens.
 
 Return ONLY a JSON array, no markdown fences:
