@@ -1,0 +1,73 @@
+name: Search
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "One query to run. Leave blank to use the list in search.py."
+        required: false
+        default: ""
+      how_many:
+        description: "How many of the built-in queries to run (blank = all)"
+        required: false
+        default: ""
+      model:
+        description: "Model"
+        required: false
+        default: "gpt-4o-mini"
+        type: choice
+        options: [gpt-4o-mini, gpt-4o]
+
+permissions:
+  contents: read
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install openai
+
+      - name: Choose the model
+        if: inputs.model != ''
+        run: sed -i 's/^MODEL = .*/MODEL = "${{ inputs.model }}"/' search.py
+
+      - name: Run the search
+        continue-on-error: true
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          QUERY: ${{ inputs.query }}
+          HOW_MANY: ${{ inputs.how_many }}
+        run: |
+          if [ -n "$QUERY" ]; then
+            python search.py "$QUERY" 2>&1 | tee run.log
+          elif [ -n "$HOW_MANY" ]; then
+            python search.py --n "$HOW_MANY" 2>&1 | tee run.log
+          else
+            python search.py 2>&1 | tee run.log
+          fi
+
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ github.run_number }}
+          path: |
+            results-*.json
+            results-*.txt
+            run.log
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Summary
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python summarise.py --slack >> $GITHUB_STEP_SUMMARY
