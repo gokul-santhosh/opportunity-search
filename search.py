@@ -120,6 +120,12 @@ Return ONLY a JSON array, no markdown fences:
   "published_on": "YYYY-MM-DD the page was first published, or null",
   "last_updated_on": "YYYY-MM-DD the page was last updated, or null",
 
+  "posts_total": null,
+  "positions": "the specific roles or weight categories, if listed",
+
+  "posts_total": null,
+  "posts_detail": "the exact positions or categories for THIS sport, or null",
+
   "amount": "what you get, in plain words",
   "application_fee_inr": null,
   "how_to_apply": "online | offline_post | in_person | email | trial_only | no_application | unknown",
@@ -134,6 +140,54 @@ Return ONLY a JSON array, no markdown fences:
   "source_url": "the page you opened",
   "summary": "two sentences on what this is and who it is for"
 }}]
+
+
+ONE NOTIFICATION CAN BE MANY OPPORTUNITIES
+
+If a single notification covers several sports, return a SEPARATE result for
+each sport. Do not collapse them into one row.
+
+A railway sports quota notification with 56 posts across badminton,
+basketball, kabaddi and ten other sports is thirteen results, not one. A
+badminton player looking for badminton work should find the badminton posts,
+with the count and positions for that sport alone.
+
+Each of those results keeps the same source_url, the same closes_on and the
+same how_to_apply. That is expected and correct — they are the same
+notification seen from thirteen different students' points of view.
+
+Set "sport" to that one sport, "posts_total" to the number of posts for that
+sport only, and "positions" to the specific roles or weight categories listed
+for it, for example "men's singles x1, women's singles x2" or "60kg, 71kg".
+
+Do the same where a notification covers several distinct schemes, tiers or
+levels. Three scholarship tiers with different eligibility are three results.
+The test is whether a student would qualify for one and not another — if so,
+they are different opportunities and belong in different rows.
+
+
+ONE NOTIFICATION CAN BE MANY OPPORTUNITIES
+
+If a single notification covers several sports, return ONE OBJECT PER SPORT
+rather than one object for the whole notification.
+
+A railway sports quota notification with 56 posts across badminton,
+basketball, kabaddi, cricket and nine other sports is thirteen results, not
+one. A student who plays badminton needs to find the badminton posts, see
+how many there are, and read the positions that apply to them. One combined
+row buries all of that.
+
+For each sport give its own title ("Badminton, 3 posts"), its own
+posts_total, and its own posts_detail listing the exact positions. Everything
+else — source_url, closes_on, provider, application_fee_inr, how_to_apply,
+documents — is the same across all of them, because it comes from the same
+notification.
+
+Do the same for a college whose trials cover several sports, or a scheme with
+separate categories per discipline.
+
+Only split where the page really does distinguish. If a notification simply
+says "open to all sports", that is one result with sport set to "any".
 
 
 DATES
@@ -158,8 +212,27 @@ date itself:
                       results". Use this rather than guessing a date.
   not_found           a deadline probably exists but you could not find it
 
+IF YOU FILLED closes_on, deadline_type CANNOT BE not_found. You found it.
+Use one_off, or annual if the page says it recurs. not_found means you
+looked and there was no date anywhere on the page.
+
 The difference between "rolling" and "not_found" is the difference between
 a correct answer and a gap. Do not use one for the other.
+
+IF YOU FILLED closes_on, deadline_type CANNOT BE not_found. You found it.
+Use one_off, or annual if the page says it recurs. not_found means you
+looked and there was no date anywhere on the page.
+
+A SCHEDULE OR TABLE OF SEVERAL DATES IS NOT A DEADLINE. If a page lists
+trial dates, counselling rounds or a timetable, do not pick one of them and
+call it the closing date. Use relative_to_event, put the schedule in the
+summary, and leave closes_on null.
+
+
+If the page shows a SCHEDULE or TABLE of several dates — trial dates,
+counselling rounds, phases — that is not a closing date. Do not pick one of
+them and call it the deadline. Use relative_to_event or not_found, and
+describe the schedule in the summary instead.
 
 
 DEADLINE_EVIDENCE must be copied VERBATIM from the page — the actual
@@ -192,11 +265,44 @@ result is a correct and useful answer.
 
 Prefer the organisation that runs the scheme over any site reposting it.
 
+DO NOT return results from linkedin.com, facebook.com, instagram.com, x.com,
+youtube.com, quora.com, or from job-aggregator sites such as sarkariresult,
+freejobalert, jagranjosh, indgovtjobs, collegedunia, careers360, shiksha or
+buddy4study. If you find a real opportunity on one of those, search for the
+organisation's own page and return that URL instead.
+
 Never invent a URL, a phone number, an amount or a date. Null is correct
 where you do not know."""
 
 
 MODEL = "gpt-5.6-luna"     # reasoning model. see REASONING below.
+
+# Social and discussion sites only. These never ORIGINATE a notification —
+# a Reddit thread or a LinkedIn post about a trial is somebody talking about
+# the notice, not the notice. They also vanish, sit behind logins, and carry
+# none of the detail a student needs.
+#
+# Deliberately NOT here: aggregators and news sites. Those repost, which is
+# annoying, but some of them also publish their own schemes (buddy4study
+# runs its own scholarship) and Indian government sites are often so badly
+# indexed that a news article is the only route to a real notification. Add
+# those later from what the full run actually shows, not from a guess.
+BLOCK = [
+    "reddit.com",
+    "quora.com",
+    "youtube.com",
+    "linkedin.com",
+    "facebook.com",
+    "instagram.com",
+    "x.com",
+    "twitter.com",
+    "pinterest.com",
+    "tiktok.com",
+    "threads.net",
+    "telegram.me",
+    "t.me",
+    "whatsapp.com",
+]
 # MODEL = "gpt-5.6-terra"  # stronger, roughly 10x the token cost
 # MODEL = "gpt-4o-mini"    # cheapest, but it invents deadlines. see notes.
 
@@ -261,7 +367,24 @@ def search(client, query):
 
     if isinstance(out, dict):
         out = [out]
-    return [o for o in out if isinstance(o, dict)], cost
+    out = [o for o in out if isinstance(o, dict)]
+
+    # Filter in code, not in the prompt. Asking a model to avoid a domain is
+    # a request; checking the URL afterwards is a guarantee. The same lesson
+    # has come up four times in this project.
+    kept = []
+    for o in out:
+        host = (o.get("source_url") or "").lower()
+        host = host.split("//")[-1].split("/")[0]
+        host = host[4:] if host.startswith("www.") else host
+        if any(host == b or host.endswith("." + b) for b in BLOCK):
+            continue
+        # A contradiction the model produced in testing: a filled deadline
+        # reported as not_found. Correct it rather than storing nonsense.
+        if o.get("closes_on") and o.get("deadline_type") == "not_found":
+            o["deadline_type"] = "one_off"
+        kept.append(o)
+    return kept, cost
 
 
 def main():
