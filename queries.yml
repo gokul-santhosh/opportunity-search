@@ -1,0 +1,305 @@
+# ============================================================
+# Harvest queries
+#
+# Built from a manual sweep that worked, not from guessing. Four principles,
+# each learned the hard way:
+#
+#   1. NAME ORGANISATIONS, NOT CATEGORIES.
+#      "GoSports Foundation athlete support" beats "sports foundation India".
+#      Organisations are stable and well indexed. A category is answered with
+#      listicles and aggregator spam.
+#
+#   2. PUT DEADLINE WORDS IN THE QUERY.
+#      "last date", "notification", "applications open". This biases results
+#      toward pages that actually state a date, which is what the scoring
+#      rewards and what vague queries fail to find.
+#
+#   3. SEARCH FOR WHAT IS CLOSED.
+#      "when open next" surfaced the fact that every college admission in the
+#      country was shut for the season. Expired results are the calendar.
+#
+#   4. KEEP THEM SHORT. Three to five words. Padding like "junior archer
+#      support" is how a fundraiser writes, not how a notification does.
+# ============================================================
+
+settings:
+  results_per_query: 10
+  max_searches_per_query: 3
+  chain_new_organisations: true    # a name in a result gets its own query
+  max_chained: 40
+  cost_ceiling_usd: 20.00
+  home_city: Coimbatore
+  home_state: Tamil Nadu
+
+
+# ============================================================
+# BROAD — finds what nobody knew to look for
+# ============================================================
+
+broad:
+  - sports scholarship India last date apply
+  - sports scholarship Tamil Nadu last date
+  - sports quota recruitment notification last date
+  - sports quota admission trials last date
+  - sports quota vacancy notification India apply online
+  - athlete financial assistance scheme India apply
+  - sportspersons welfare scheme India application
+  - sports talent scholarship India notification
+  - sports hostel admission India selection trials
+  - sports academy free admission India trials
+  - athlete stipend scheme India apply
+  - sports equipment grant India athlete apply
+
+  # the seasonal question. tells you WHEN, not just what
+  - sports scholarship India closed when open next
+  - sports quota recruitment India next notification date
+  - sports quota admission India dates announced
+  - sports scholarship application dates 2027 India
+
+  # the words the documents themselves use
+  - '"gradation certificate" sportspersons application'
+  - '"meritorious sportspersons" scheme India'
+  - '"eminent sportspersons" recruitment notification'
+  - '"outstanding sportspersons" recruitment India'
+  - '"sportspersons quota" advertisement India'
+  - '"3% reservation" sportspersons government jobs'
+  - '"2% reservation" sports quota recruitment'
+  - incentive scheme sportspersons state government apply
+  - cash award medal winners sportspersons scheme
+  - sports pension meritorious sportspersons India
+
+
+# ============================================================
+# ORGANISATIONS — the highest-yield tier
+# ============================================================
+
+organisations:
+
+  # central government
+  - Khelo India scholarship notification apply
+  - Sports Authority of India scholarship last date
+  - National Sports Scholarship Scheme apply last date
+  - dbtyas sports scheme India apply
+  - Target Olympic Podium Scheme athlete support
+  - KIRTI talent identification trials Khelo India
+  - National Sports Development Fund apply
+  - SAI Come and Play scheme admission
+  - NSRS registration Khelo India athlete
+  - National Sports University admission
+
+  # railway zones — each publishes separately, on its own cycle
+  - Northern Railway sports quota recruitment
+  - Southern Railway sports quota recruitment
+  - South Eastern Railway sports quota recruitment
+  - South Central Railway sports quota recruitment
+  - Western Railway sports quota recruitment
+  - Central Railway sports quota recruitment
+  - Northeast Frontier Railway sports quota recruitment
+  - East Coast Railway sports quota recruitment
+  - Integral Coach Factory sports quota recruitment
+  - Rail Wheel Factory sports quota recruitment
+  - Chittaranjan Locomotive Works sports quota
+  - RRC sports quota recruitment notification
+
+  # banks and public sector
+  - State Bank of India sports quota sportspersons
+  - Indian Bank sports quota recruitment
+  - Punjab National Bank sports quota recruitment
+  - Bank of Baroda sports quota sportspersons
+  - Canara Bank sports quota recruitment
+  - Union Bank sports quota sportspersons
+  - Reserve Bank of India sports quota recruitment
+  - ONGC sports quota recruitment sportspersons
+  - Indian Oil sports quota sportspersons
+  - NTPC sports quota recruitment
+  - Coal India sports quota sportspersons
+  - SAIL sports quota recruitment
+  - Air India sports quota sportspersons
+  - LIC sports quota recruitment sportspersons
+  - Food Corporation of India sports quota
+
+  # uniformed services
+  - CISF sports quota meritorious sportspersons
+  - BSF sports quota constable sportspersons
+  - CRPF sports quota recruitment sportspersons
+  - ITBP sports quota recruitment sportspersons
+  - SSB sports quota recruitment sportspersons
+  - Indian Army sports quota havildar recruitment
+  - Indian Navy sports quota sportspersons
+  - Indian Air Force sports quota sportspersons
+  - Tamil Nadu police sports quota recruitment
+
+  # Tamil Nadu
+  - SDAT Tamil Nadu scheme sportspersons apply
+  - SDAT sports hostel admission notification
+  - SDAT Champions Development Scheme athlete
+  - Tamil Nadu Champions Foundation athlete support
+  - Tamil Nadu sports quota government jobs application
+  - TNEA sports quota engineering admission
+  - Tamil Nadu Physical Education Sports University admission
+  - Anna University sports quota admission
+  - Tamil Nadu MBBS sports quota admission
+  - Coimbatore district sports office notification
+  - Tamil Nadu chief minister sports award
+
+  # foundations, trusts and CSR
+  - GoSports Foundation athlete support apply
+  - Olympic Gold Quest athlete support
+  - Reliance Foundation scholarship last date
+  - Reliance Foundation Youth Sports registration
+  - JSW Sports Inspire Institute athlete
+  - Tata Trusts sports grant athlete
+  - Lakshya Sports athlete support India
+  - Hyundai Samarth para sports programme
+  - SBI Foundation para athlete scholarship
+  - Bharti Foundation sports scholarship
+  - Infosys Foundation sports academy support
+  - Dream Sports Foundation athlete grant
+  - Sathish Sivalingam Sports Foundation
+  - Gopichand Badminton Academy admission trials
+  - Prakash Padukone Badminton Academy admission
+  - Mary Kom boxing academy admission
+  - Usha School of Athletics admission
+
+  # federations
+  - Badminton Association of India tournament calendar
+  - Athletics Federation of India national championship
+  - Amateur Kabaddi Federation India championship
+  - Volleyball Federation of India championship
+  - School Games Federation of India SGFI
+  - Association of Indian Universities inter university sports
+
+
+# ============================================================
+# SPORTS — lower yield each, but they find small local things a
+# broad query buries
+# ============================================================
+
+sports:
+  - athletics scholarship India apply last date
+  - badminton scholarship India apply
+  - kabaddi sports quota recruitment India
+  - volleyball sports quota recruitment India
+  - hockey sports quota recruitment India
+  - football academy trials India selection
+  - cricket scholarship India apply
+  - basketball trials India junior selection
+  - swimming scholarship India apply
+  - boxing scholarship India apply
+  - wrestling sports quota recruitment India
+  - weightlifting scholarship India apply
+  - archery scholarship India apply
+  - shooting scholarship India apply
+  - table tennis scholarship India apply
+  - tennis scholarship India junior
+  - squash scholarship India apply
+  - gymnastics scholarship India apply
+  - chess scholarship India apply
+  - kho kho scholarship India apply
+  - handball scholarship India apply
+  - judo scholarship India apply
+  - taekwondo scholarship India apply
+  - karate scholarship India apply
+  - fencing scholarship India apply
+  - wushu scholarship India apply
+  - rowing scholarship India apply
+  - track cycling scholarship India apply
+  - silambam Tamil Nadu scheme scholarship
+  - mallakhamb scholarship India scheme
+  - yogasana scholarship India scheme
+  - para sports scholarship India apply
+  - para athlete support scheme India
+  - deaflympics athlete support India
+  - special olympics India athlete support
+
+
+# ============================================================
+# TAMIL
+# HAVE A TAMIL SPEAKER CHECK THESE BEFORE THE RUN. A wrong term returns
+# nothing rather than failing visibly, so a zero result tells you nothing
+# about which it was.
+# ============================================================
+
+tamil:
+  - விளையாட்டு உதவித்தொகை தமிழ்நாடு விண்ணப்பம்
+  - விளையாட்டு ஒதுக்கீடு வேலைவாய்ப்பு அறிவிப்பு
+  - விளையாட்டு ஒதுக்கீடு கல்லூரி சேர்க்கை
+  - விளையாட்டு விடுதி சேர்க்கை தேர்வு
+  - விளையாட்டு வீரர் அரசு உதவி திட்டம்
+  - சிலம்பம் உதவித்தொகை தமிழ்நாடு
+  - மாவட்ட விளையாட்டு அலுவலகம் கோயம்புத்தூர்
+
+
+# ============================================================
+# Domains that only ever waste time. Every one appeared in a real run as
+# a repost rather than a source. Grow this from what you see, not guesses.
+# ============================================================
+
+blocked_domains:
+  - indgovtjobs.in
+  - careerera.com
+  - collegechalo.com
+  - collegemanzil.com
+  - shishya.in
+  - indiascholarships.in
+  - schemesinindia.in
+  - egovtschemes.com
+  - tamilancareer.com
+  - jobkola.com
+  - tamilnadurecruitment.in
+  - govnokri.com
+  - scholarshiplearn.com
+  - sarkariresult.app
+  - sarkariresult.com
+  - sarkarijobkhojo.com
+  - tnjobzone.com
+  - citizennest.com
+  - vidyavision.com
+  - ipit.in
+  - freejobalert.com
+  - jagranjosh.com
+  - facebook.com
+  - instagram.com
+  - x.com
+  - twitter.com
+  - youtube.com
+  - pinterest.com
+  - quora.com
+
+# NOT blocked, deliberately: livechennai.com, dtnext.in, dinamalar.com,
+# thehindu.com, newindianexpress.com. Indian government sites are often so
+# badly indexed that local news is the only route to a real notification.
+# One SDAT hostel deadline reached us that way and nowhere else.
+
+
+# ============================================================
+# Rough road distances from Coimbatore, for sorting. Approximate is fine —
+# what matters is that 3,000km sorts below 215km.
+# ============================================================
+
+distances:
+  Coimbatore: 0
+  Madurai: 215
+  Erode: 100
+  Salem: 160
+  Tiruchirappalli: 210
+  Kanyakumari: 350
+  Bengaluru: 360
+  Chennai: 500
+  Kochi: 190
+  Hyderabad: 780
+  Amaravati: 800
+  Mumbai: 1200
+  Surat: 1400
+  Pune: 1000
+  Kolkata: 1900
+  Bhubaneswar: 1600
+  Jaipur: 2100
+  Delhi: 2200
+  Greater Noida: 2200
+  Gurugram: 2200
+  Lucknow: 2100
+  Dehradun: 2500
+  Chandigarh: 2500
+  Punjab: 2600
+  Guwahati: 3000

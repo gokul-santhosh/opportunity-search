@@ -1,0 +1,14 @@
+# Search receipts — useful locally, grow daily, not worth committing
+.journal/
+
+# Never commit. The service_role key bypasses every security policy, and
+# deleting the file later leaves the value in git history — you would have
+# to rotate the key.
+.env
+*.key
+*.pem
+
+venv/
+__pycache__/
+*.pyc
+.DS_Store
