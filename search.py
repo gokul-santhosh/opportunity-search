@@ -116,19 +116,22 @@ Return ONLY a JSON array, no markdown fences:
   "summary": "two sentences"
 }}]
 
-DATES: only fill in "closes_on" if the page states an actual closing date.
-If it does not, use null. Do not use 31 December, do not use the end of the
-academic year, do not infer a date from the scheme name. A null date is
-correct and useful; an invented one sends someone to a closed application.
+DATES: only fill "closes_on" if you have seen the actual closing date
+stated on a page. If the search result does not show one, search again
+or open the notification to find it. If it still is not there, use null.
 
-If the opportunity has no deadline because it runs continuously, or because
-people are selected rather than applying, set "closes_on" to null and say so
-in the summary.
+Do not use 31 December. Do not use the end of the academic year. Do not
+infer a date from the scheme name. A null is correct and useful; an
+invented date sends someone to a closed application.
+
+If the opportunity has no deadline because it runs continuously, or
+because people are selected rather than applying, set "closes_on" to null
+and say so in the summary.
 
 Never invent a URL either."""
 
 
-MODEL = "gpt-4o-mini"      # about 1.1 cents per query
+MODEL = "gpt-5.6-luna"      # about 1.1 cents per query
 # MODEL = "gpt-4o"         # better reading, roughly 5x the cost
 
 
@@ -139,6 +142,7 @@ def search(client, query):
     r = client.responses.create(
         model=MODEL,
         tools=[{"type": "web_search"}],
+        reasoning={"effort": "medium"},
         max_output_tokens=6000,
         input=ASK.format(query=query),
     )
@@ -152,11 +156,11 @@ def search(client, query):
     # $10 per 1,000 searches, plus 8,000 tokens of search content per call
     # billed at the model's input rate — that second part is the one that
     # surprises people on the invoice
-    cost = used * 0.010 + used * (8000 / 1e6) * 0.15
+    cost = used * 0.010 + used * (8000 / 1e6) * 0.20
     u = getattr(r, "usage", None)
     if u:
-        cost += (getattr(u, "input_tokens", 0) / 1e6) * 0.15
-        cost += (getattr(u, "output_tokens", 0) / 1e6) * 0.60
+        cost += (getattr(u, "input_tokens", 0) / 1e6) * 0.20
+        cost += (getattr(u, "output_tokens", 0) / 1e6) * 1.20
 
     # strip markdown fences if the model added them despite being asked not to
     clean = text.strip()
