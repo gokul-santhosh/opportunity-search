@@ -75,7 +75,16 @@ Return ONLY a JSON array, no markdown fences:
   "summary": "two sentences"
 }}]
 
-Never invent a URL or a date. Null is correct where you do not know."""
+DATES: only fill in "closes_on" if the page states an actual closing date.
+If it does not, use null. Do not use 31 December, do not use the end of the
+academic year, do not infer a date from the scheme name. A null date is
+correct and useful; an invented one sends someone to a closed application.
+
+If the opportunity has no deadline because it runs continuously, or because
+people are selected rather than applying, set "closes_on" to null and say so
+in the summary.
+
+Never invent a URL either."""
 
 
 MODEL = "gpt-4o-mini"      # about 1.1 cents per query
