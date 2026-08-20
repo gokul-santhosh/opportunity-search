@@ -11,13 +11,18 @@ on:
         description: "How many of the built-in queries to run (blank = all)"
         required: false
         default: ""
-      model:
+            model:
         description: "Model"
         required: false
-        default: "gpt-4o-mini"
+        default: "gpt-5.6-luna"
         type: choice
-        options: [gpt-4o-mini, gpt-4o]
-
+        options: [gpt-5.6-luna, gpt-5.6-terra, gpt-4o-mini]
+      reasoning:
+        description: "Reasoning effort (Luna and Terra only)"
+        required: false
+        default: "medium"
+        type: choice
+        options: [none, low, medium, high]
 permissions:
   contents: read
 
