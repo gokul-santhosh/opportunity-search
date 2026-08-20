@@ -98,41 +98,115 @@ ASK = """Search the web for: {query}
 This is for student athletes in India, especially Tamil Nadu, from
 low-income families.
 
-Return everything relevant you find, up to 25 results. Include expired
-listings — an old notification tells us when the scheme reopens.
+Return everything relevant you find, up to 10 results. Include expired
+listings — an old notification tells us when the scheme reopens, which is
+often worth more than a live listing.
 
 Return ONLY a JSON array, no markdown fences:
 
 [{{
-  "title": "",
-  "provider": "the organisation running it",
   "kind": "scholarship | college_quota | job | training | award",
+  "title": "",
+  "provider": "the organisation that runs it",
   "sport": "the sport, or 'any'",
+  "min_level": "school | district | state | national | international | null",
+
   "closes_on": "YYYY-MM-DD or null",
-  "min_level": "school|district|state|national|international|null",
+  "deadline_type": "one_off | annual | rolling | relative_to_event | not_found",
+  "deadline_evidence": "the exact sentence stating the deadline, word for word, or null",
+  "reopens_month": null,
+  "recurrence": "what the page says about how often this runs, or null",
+
+  "published_on": "YYYY-MM-DD the page was first published, or null",
+  "last_updated_on": "YYYY-MM-DD the page was last updated, or null",
+
   "amount": "what you get, in plain words",
-  "how_to_apply": "online | by post | in person | email | trials only | unknown",
+  "application_fee_inr": null,
+  "how_to_apply": "online | offline_post | in_person | email | trial_only | no_application | unknown",
+  "apply_url": "the application page if different from source_url",
+  "documents": ["what you must bring or upload"],
+
+  "location_city": null,
+  "location_state": null,
+  "contact_phone": "phone number shown on the page, or null",
+  "contact_email": null,
+
   "source_url": "the page you opened",
-  "summary": "two sentences"
+  "summary": "two sentences on what this is and who it is for"
 }}]
 
-DATES: only fill "closes_on" if you have seen the actual closing date
-stated on a page. If the search result does not show one, search again
-or open the notification to find it. If it still is not there, use null.
+
+DATES
+
+Only fill "closes_on" if you have seen the actual closing date stated on a
+page. If the search result does not show one, search again or open the
+notification to find it. If it still is not there, use null.
 
 Do not use 31 December. Do not use the end of the academic year. Do not
 infer a date from the scheme name. A null is correct and useful; an
 invented date sends someone to a closed application.
 
-If the opportunity has no deadline because it runs continuously, or
-because people are selected rather than applying, set "closes_on" to null
-and say so in the summary.
 
-Never invent a URL either."""
+DEADLINE_TYPE tells us WHY there is no date, which matters as much as the
+date itself:
+
+  one_off             a single closing date, stated on the page
+  annual              recurs yearly. give reopens_month if the page says
+  rolling             open continuously, no deadline at all
+  relative_to_event   tied to something else rather than a calendar date,
+                      for example "counselling on the 4th day after 12th
+                      results". Use this rather than guessing a date.
+  not_found           a deadline probably exists but you could not find it
+
+The difference between "rolling" and "not_found" is the difference between
+a correct answer and a gap. Do not use one for the other.
 
 
-MODEL = "gpt-5.6-luna"      # about 1.1 cents per query
-# MODEL = "gpt-4o"         # better reading, roughly 5x the cost
+DEADLINE_EVIDENCE must be copied VERBATIM from the page — the actual
+sentence, not a paraphrase. This is checked mechanically afterwards. If you
+cannot find such a sentence, use null for deadline_evidence AND for
+closes_on.
+
+
+PUBLISHED_ON and LAST_UPDATED_ON: only fill these if the page itself shows
+a date — a byline, a "last updated" line, a notification date, or a date
+printed on a PDF. Do not use the date of the event described, do not use
+the academic year, do not guess from the URL. Null is correct when the page
+shows nothing.
+
+If only one date is shown and you cannot tell which it is, put it in
+published_on and leave last_updated_on null.
+
+
+WHAT COUNTS
+
+Scholarships, college admission or trials under sports quota, jobs reserved
+for sportspersons, grants, stipends, free training places, sports hostels,
+cash awards for medallists.
+
+WHAT DOES NOT COUNT, and must not be substituted when you find little:
+general merit or income scholarships open to all students; caste, community,
+minority or girl-child welfare schemes; free bicycle, laptop or uniform
+distribution. Sports achievement must be part of who qualifies. An empty
+result is a correct and useful answer.
+
+Prefer the organisation that runs the scheme over any site reposting it.
+
+Never invent a URL, a phone number, an amount or a date. Null is correct
+where you do not know."""
+
+
+MODEL = "gpt-5.6-luna"     # reasoning model. see REASONING below.
+# MODEL = "gpt-5.6-terra"  # stronger, roughly 10x the token cost
+# MODEL = "gpt-4o-mini"    # cheapest, but it invents deadlines. see notes.
+
+# How hard the model works before answering: none, low, medium, high, xhigh.
+# This is what makes the difference. At "none" the model does one search and
+# writes from the snippet — which is why it used to return 2026-12-31 for
+# everything, having no real date to report. At "medium" it searches again,
+# opens the notification, and finds the actual date or honestly says there
+# is none.
+REASONING = "medium"
 
 
 # ============================================================
@@ -142,8 +216,8 @@ def search(client, query):
     r = client.responses.create(
         model=MODEL,
         tools=[{"type": "web_search"}],
-        reasoning={"effort": "medium"},
-        max_output_tokens=6000,
+        reasoning={"effort": REASONING},
+        max_output_tokens=8000,
         input=ASK.format(query=query),
     )
 
@@ -153,14 +227,15 @@ def search(client, query):
     used = sum(1 for item in getattr(r, "output", [])
                if getattr(item, "type", "") == "web_search_call") or 1
 
-    # $10 per 1,000 searches, plus 8,000 tokens of search content per call
-    # billed at the model's input rate — that second part is the one that
-    # surprises people on the invoice
-    cost = used * 0.010 + used * (8000 / 1e6) * 0.20
+    # $10 per 1,000 searches, plus the page content pulled in, billed at the
+    # model's input rate. Note output_tokens includes REASONING tokens, which
+    # bill at the output rate — that is where the cost of thinking lands.
+    IN_RATE, OUT_RATE = 0.20, 1.20        # gpt-5.6-luna, after 30 July 2026
+    cost = used * 0.010 + used * (8000 / 1e6) * IN_RATE
     u = getattr(r, "usage", None)
     if u:
-        cost += (getattr(u, "input_tokens", 0) / 1e6) * 0.20
-        cost += (getattr(u, "output_tokens", 0) / 1e6) * 1.20
+        cost += (getattr(u, "input_tokens", 0) / 1e6) * IN_RATE
+        cost += (getattr(u, "output_tokens", 0) / 1e6) * OUT_RATE
 
     # strip markdown fences if the model added them despite being asked not to
     clean = text.strip()
@@ -238,18 +313,37 @@ def main():
                         f"  {r.get('source_url','?')}\n"
                         f"  {r.get('summary','')}\n")
 
-        print(f"    {len(results)} results | ${total:.3f} so far")
+        dated = sum(1 for r in results if r.get("closes_on"))
+        rolling = sum(1 for r in results if r.get("deadline_type") == "rolling")
+        notfound = sum(1 for r in results if r.get("deadline_type") == "not_found")
+        print(f"    {len(results)} results | {dated} dated, {rolling} rolling, "
+              f"{notfound} date not found | ${total:.3f} so far")
         for r in results[:3]:
-            print(f"      {(r.get('title') or '?')[:60]}")
-            print(f"        {r.get('closes_on') or 'no date':12} "
-                  f"{(r.get('source_url') or '')[:56]}")
+            print(f"      {(r.get('title') or '?')[:62]}")
+            print(f"        {r.get('closes_on') or '(no date)':12} "
+                  f"{(r.get('deadline_type') or '?'):18} "
+                  f"{(r.get('source_url') or '')[:44]}")
         if len(results) > 3:
             print(f"      ... and {len(results)-3} more")
         print()
 
+    import collections
+    types = collections.Counter(r.get("deadline_type") or "(missing)"
+                                for r in everything)
+    fabricated = sum(1 for r in everything if r.get("closes_on") == "2026-12-31")
+
     print(f"{'='*70}")
     print(f"{len(everything)} results from {len(queries)} queries")
     print(f"${total:.2f} spent")
+    print()
+    print("deadline types:")
+    for t, c in types.most_common():
+        print(f"  {t:20} {c}")
+    print()
+    # The old model filled every unknown deadline with 31 December. If this
+    # is above zero, the model is guessing again and the prompt needs work.
+    print(f"suspicious 2026-12-31 dates: {fabricated}"
+          f"{'   <-- the model is guessing again' if fabricated else '   (good)'}")
     print(f"\n  {json_path}")
     print(f"  {text_path}")
 
